@@ -8,6 +8,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -129,10 +130,32 @@ public class ImpressionistView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent){
 
-        //TODO
-        //Basically, the way this works is to liste for Touch Down and Touch Move events and determine where those
-        //touch locations correspond to the bitmap in the ImageView. You can then grab info about the bitmap--like the pixel color--
-        //at that location
+        float touchX = motionEvent.getX();
+        float touchY = motionEvent.getY();
+
+        //http://stackoverflow.com/questions/7807360/how-to-get-pixel-colour-in-android
+        int pixel = ((BitmapDrawable)_imageView.getDrawable()).getBitmap()
+                .getPixel((int) touchX, (int) touchY);
+
+        int r = Color.red(pixel);
+        int b = Color.blue(pixel);
+        int g = Color.green(pixel);
+
+        _paint.setARGB(_alpha, r, g, b);
+
+        System.out.println(r + " " + g + " " + b);
+
+        switch(motionEvent.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                _offScreenCanvas.drawRect(touchX, touchY, touchX+5, touchY+5,_paint);
+                break;
+            case MotionEvent.ACTION_MOVE:
+
+                break;
+            case MotionEvent.ACTION_UP:
+                _offScreenCanvas.drawRect(touchX, touchY, touchX+5, touchY+5,_paint);
+                break;
+        }
 
 
         return true;
