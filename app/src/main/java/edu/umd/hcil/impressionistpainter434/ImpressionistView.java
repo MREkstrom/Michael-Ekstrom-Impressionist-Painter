@@ -112,7 +112,8 @@ public class ImpressionistView extends View {
      * Clears the painting
      */
     public void clearPainting(){
-        //TODO
+        _offScreenCanvas.drawColor(Color.WHITE);
+        invalidate();
     }
 
     @Override
@@ -133,9 +134,28 @@ public class ImpressionistView extends View {
         float touchX = motionEvent.getX();
         float touchY = motionEvent.getY();
 
+        Rect bmpPos = getBitmapPositionInsideImageView(_imageView);
+        Bitmap bmp = ((BitmapDrawable)_imageView.getDrawable()).getBitmap();
+
+        if (! bmpPos.contains((int)touchX, (int)touchY))
+            return true;
+
+        touchY = touchY - (bmpPos.top);
+
+        //Bitmap w/h: 1152 768
+        //rect.contains
+/*
+        if (touchX < 1)
+            touchX = 1;
+        if (touchY < 1)
+            touchY = 1;
+        if (touchX > bmp.getWidth()-1)
+            touchX = bmp.getWidth()-1;
+        if (touchY > bmp.getHeight()-1)
+            touchY = bmp.getHeight()-1;*/
+
         //http://stackoverflow.com/questions/7807360/how-to-get-pixel-colour-in-android
-        int pixel = ((BitmapDrawable)_imageView.getDrawable()).getBitmap()
-                .getPixel((int) touchX, (int) touchY);
+        int pixel = bmp.getPixel((int) touchX, (int) touchY);
 
         int r = Color.red(pixel);
         int b = Color.blue(pixel);
@@ -143,17 +163,18 @@ public class ImpressionistView extends View {
 
         _paint.setARGB(_alpha, r, g, b);
 
-        System.out.println(r + " " + g + " " + b);
+        touchY += bmpPos.top;
 
         switch(motionEvent.getAction()){
             case MotionEvent.ACTION_DOWN:
-                _offScreenCanvas.drawRect(touchX, touchY, touchX+5, touchY+5,_paint);
+
                 break;
             case MotionEvent.ACTION_MOVE:
 
+                _offScreenCanvas.drawRect(touchX-50, touchY-50, touchX+50, touchY+50, _paint);
+                invalidate();
                 break;
             case MotionEvent.ACTION_UP:
-                _offScreenCanvas.drawRect(touchX, touchY, touchX+5, touchY+5,_paint);
                 break;
         }
 
