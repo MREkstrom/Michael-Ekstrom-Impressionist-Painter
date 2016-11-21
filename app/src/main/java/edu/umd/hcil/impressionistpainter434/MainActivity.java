@@ -13,9 +13,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.ActionMenuView;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
@@ -63,6 +65,29 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         ImageView imageView = (ImageView)findViewById(R.id.viewImage);
         _impressionistView.setImageView(imageView);
 
+        //Set the background button to toggle the background when clicked, toggle off when released
+        Button backgroundButton = (Button) findViewById(R.id.buttonBackground);
+        //Code referenced: http://stackoverflow.com/questions/4597513/onpress-onrelease-in-android
+        backgroundButton.setOnTouchListener(new View.OnTouchListener(){
+            @Override
+            public boolean onTouch(View v, MotionEvent e){
+                if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                    _impressionistView.backGroundOn();
+                }else {
+                    _impressionistView.backGroundOff();
+                }
+                return true;
+            }
+        });
+
+    }
+
+    public void onButtonClickSpecialFeature(View v){
+        _impressionistView.toggleSpecialFeature();
+    }
+
+    public void onButtonClickSaveImage(View v) {
+
     }
 
     public void onButtonClickClear(View v) {
@@ -88,24 +113,16 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
     public boolean onMenuItemClick(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menuCircle:
-                Toast.makeText(this, "Circle Brush", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Circle Splatter Brush", Toast.LENGTH_SHORT).show();
                 _impressionistView.setBrushType(BrushType.Circle);
                 return true;
             case R.id.menuSquare:
-                Toast.makeText(this, "Square Brush", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Rotating Square Brush", Toast.LENGTH_SHORT).show();
                 _impressionistView.setBrushType(BrushType.Square);
                 return true;
-            case R.id.menuLine:
-                Toast.makeText(this, "Line Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.Line);
-                return true;
-            case R.id.menuCircleSplatter:
-                Toast.makeText(this, "Circle Splatter Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.CircleSplatter);
-                return true;
-            case R.id.menuLineSplatter:
-                Toast.makeText(this, "Line Splatter Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.LineSplatter);
+            case R.id.menuLetter:
+                Toast.makeText(this, "Alphabet Soup Brush", Toast.LENGTH_SHORT).show();
+                _impressionistView.setBrushType(BrushType.Letter);
                 return true;
         }
         return false;
