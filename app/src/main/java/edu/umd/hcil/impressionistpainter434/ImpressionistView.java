@@ -27,17 +27,17 @@ public class ImpressionistView extends View {
     private ImageView _imageView;
 
     private Canvas _offScreenCanvas = null;
+    private Canvas _backGroundCanvas = null; //Special feature: Colored background
     private Bitmap _offScreenBitmap = null;
     private Paint _paint = new Paint();
 
-    private int _alpha = 150;
-    private int _defaultRadius = 25;
-    private Point _lastPoint = null;
-    private long _lastPointTime = -1;
-    private boolean _useMotionSpeedForBrushStrokeSize = true;
+    private int _alpha = 150; //Hard coded alpha value
+    private float _speed = 0; //Current brush speed for use in some brush strokes
+    private int _rotate = 0; //Current rotation for use in some brush strokes
+    private Point _lastPoint = null; //Used to calculate _speed
+    private boolean _specialMode = false;//When true, modify environment for special feature
     private Paint _paintBorder = new Paint();
     private BrushType _brushType = BrushType.Square;
-    private float _minBrushRadius = 5;
 
     public ImpressionistView(Context context) {
         super(context);
@@ -72,6 +72,7 @@ public class ImpressionistView extends View {
         _paint.setAntiAlias(true);
         _paint.setStyle(Paint.Style.FILL);
         _paint.setStrokeWidth(4);
+        _paint.setTextSize(100f);//For use in BrushType.Letter
 
         _paintBorder.setColor(Color.BLACK);
         _paintBorder.setStrokeWidth(3);
@@ -89,6 +90,7 @@ public class ImpressionistView extends View {
         if(bitmap != null) {
             _offScreenBitmap = getDrawingCache().copy(Bitmap.Config.ARGB_8888, true);
             _offScreenCanvas = new Canvas(_offScreenBitmap);
+            _backGroundCanvas = new Canvas();
         }
     }
 
@@ -128,50 +130,123 @@ public class ImpressionistView extends View {
         canvas.drawRect(getBitmapPositionInsideImageView(_imageView), _paintBorder);
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent motionEvent){
+    //TODO
+    public void toggleSpecialFeature(){
+        _specialMode = !_specialMode;
+    }
 
-        float touchX = motionEvent.getX();
-        float touchY = motionEvent.getY();
+    //Extract the color from the source bitmap at the given X and Y position
+    public void setPixelColor(float x, float y) {
 
-        Rect bmpPos = getBitmapPositionInsideImageView(_imageView);
-        Bitmap bmp = ((BitmapDrawable)_imageView.getDrawable()).getBitmap();
-
-        if (! bmpPos.contains((int)touchX, (int)touchY))
-            return true;
-
-        touchY = touchY - (bmpPos.top);
-
-        //Bitmap w/h: 1152 768
-        //rect.contains
-/*
-        if (touchX < 1)
-            touchX = 1;
-        if (touchY < 1)
-            touchY = 1;
-        if (touchX > bmp.getWidth()-1)
-            touchX = bmp.getWidth()-1;
-        if (touchY > bmp.getHeight()-1)
-            touchY = bmp.getHeight()-1;*/
-
-        //http://stackoverflow.com/questions/7807360/how-to-get-pixel-colour-in-android
-        int pixel = bmp.getPixel((int) touchX, (int) touchY);
+        Bitmap bmp = _imageView.getDrawingCache();
+        int pixel = bmp.getPixel((int) x, (int) y);
 
         int r = Color.red(pixel);
         int b = Color.blue(pixel);
         int g = Color.green(pixel);
 
-        _paint.setARGB(_alpha, r, g, b);
+        if (_specialMode) {
+            r = 255 - r;
+            b = 255 - b;
+            g = 255 - g;
+        }
 
-        touchY += bmpPos.top;
+        _paint.setARGB(_alpha, r, g, b);
+    }
+
+    //Draws at the given location with the current brush option and current
+    public void drawSwatch(float x, float y) {
+        switch(_brushType) {
+            case Circle:
+                //Adjust the size and the center of the circle based on random values and brush speed
+                int circlesize = (int) (10 * _speed);
+                float xadjust = (float) ((Math.random()-.5)* _speed *5);
+                float yadjust = (float) ((Math.random()-.5)* _speed *5);
+                _offScreenCanvas.drawCircle(x+xadjust, y+yadjust, circlesize, _paint);
+                break;
+            case Square:
+
+                //Rotate code found on
+                //http://stackoverflow.com/questions/19837489/android-how-to-rotate-rect-object
+                _offScreenCanvas.save();
+                _offScreenCanvas.rotate(_rotate, x, y);
+                int halfrect = 50; //Half of the rectangle's size
+                _offScreenCanvas.drawRect(x-halfrect, y-halfrect, x+halfrect, y+halfrect, _paint);
+                _offScreenCanvas.restore();
+
+                //Rotate the canvas more each time
+                _rotate += 1;
+                break;
+
+            case Letter:
+                //Pick a random letter from A to Z and draw it
+                int randval = (int) (Math.random() * 26) + 65;
+                _offScreenCanvas.drawText(Character.toString((char) randval) ,x, y, _paint);
+                break;
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent motionEvent){
+
+        float currTouchX = motionEvent.getX();
+        float currTouchY = motionEvent.getY();
+
+        Rect bmpPos = getBitmapPositionInsideImageView(_imageView);
 
         switch(motionEvent.getAction()){
             case MotionEvent.ACTION_DOWN:
+                //Set _lastPoint for speed calculations
+                _lastPoint = new Point((int)motionEvent.getX(), (int)motionEvent.getY());
+                _speed = 2f; //messes up things if this is zero
 
+                bmpPos = getBitmapPositionInsideImageView(_imageView);
+
+                //If they tried to draw outside, return true and do not draw
+                if (! bmpPos.contains((int)currTouchX, (int)currTouchY))
+                    return true;
+                setPixelColor(currTouchX, currTouchY);
+                drawSwatch(currTouchX, currTouchY);
+                invalidate();
                 break;
             case MotionEvent.ACTION_MOVE:
+                //Movement history code from in-class example
+                int historySize = motionEvent.getHistorySize();
+                bmpPos = getBitmapPositionInsideImageView(_imageView);
 
-                _offScreenCanvas.drawRect(touchX-50, touchY-50, touchX+50, touchY+50, _paint);
+                //Use historical values for smoother brush strokes and more accurate speed calculations
+                for (int i = 0; i < historySize; i++) {
+                    if (_brushType == BrushType.Letter && i%4 != 0)
+                        continue;
+                    float touchX = motionEvent.getHistoricalX(i);
+                    float touchY = motionEvent.getHistoricalY(i);
+
+                    //Calculate the speed for use in brush strokes.
+                    //Technically distance, but we are scaling the numbers in the drawSwatch method anyways
+                    //Only compute speed if the brushType depends on it
+                    if (_brushType == BrushType.Circle)
+                    _speed = (float) Math.sqrt(Math.pow(_lastPoint.x - touchX,2) + Math.pow(_lastPoint.y - touchY,2));
+                    _lastPoint = new Point((int)touchX, (int)touchY);
+
+                    //If they tried to draw outside, do not draw or request color.
+                    if (! bmpPos.contains((int)touchX, (int)touchY))
+                        continue;
+                    setPixelColor(touchX, touchY);
+                    drawSwatch(touchX, touchY);
+                }
+
+                //Calculate speed again
+                if (_brushType == BrushType.Circle)
+                    _speed = (float) Math.sqrt(Math.pow(_lastPoint.x - currTouchX,2) + Math.pow(_lastPoint.y - currTouchY,2));
+                _lastPoint = new Point((int) currTouchX, (int) currTouchY);
+
+                //If they tried to draw outside, return true and do not draw
+                if (! bmpPos.contains((int)currTouchX, (int)currTouchY))
+                    return true;
+                setPixelColor(currTouchX, currTouchY);
+                drawSwatch(currTouchX, currTouchY);
+
+
                 invalidate();
                 break;
             case MotionEvent.ACTION_UP:
