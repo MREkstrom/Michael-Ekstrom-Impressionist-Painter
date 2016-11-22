@@ -8,9 +8,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -18,19 +16,16 @@ import android.view.View;
 import android.widget.ImageView;
 
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Random;
 
 /**
  * Created by jon on 3/20/2016.
+ * Later modified by Michael Ekstrom
  */
 public class ImpressionistView extends View {
 
     private ImageView _imageView;
 
     private Canvas _offScreenCanvas = null;
-    private Canvas _backGroundCanvas = null; //Special feature: Colored background
     private Bitmap _offScreenBitmap = null;
     private Paint _paint = new Paint();
     private Paint _backGroundPaint = new Paint();
@@ -38,7 +33,6 @@ public class ImpressionistView extends View {
     private int _alpha = 150; //Hard coded alpha value
     private float _speed = 0; //Current brush speed for use in some brush strokes
     private int _rotate = 0; //Current rotation for use in some brush strokes
-    private int _numsaved = 0;//Used to avoid name overlaps
     private Point _lastPoint = null; //Used to calculate _speed
     private boolean _specialMode = false;//When true, invert colors
     private boolean _backGroundOn = false;//When true, draw the image behind the _offScreenBitmap
@@ -98,7 +92,7 @@ public class ImpressionistView extends View {
         if(bitmap != null) {
             _offScreenBitmap = getDrawingCache().copy(Bitmap.Config.ARGB_8888, true);
             _offScreenCanvas = new Canvas(_offScreenBitmap);
-            _backGroundCanvas = new Canvas();
+
         }
     }
 
@@ -188,6 +182,7 @@ public class ImpressionistView extends View {
         int b = Color.blue(pixel);
         int g = Color.green(pixel);
 
+        //If color inversion is on, invert colors
         if (_specialMode) {
             r = 255 - r;
             b = 255 - b;
@@ -197,7 +192,7 @@ public class ImpressionistView extends View {
         _paint.setARGB(_alpha, r, g, b);
     }
 
-    //Draws at the given location with the current brush option and current
+    //Draws at the given location with the current brush option and paint color
     public void drawSwatch(float x, float y) {
         switch(_brushType) {
             case Circle:
@@ -219,6 +214,8 @@ public class ImpressionistView extends View {
 
                 //Rotate the canvas more each time
                 _rotate += 1;
+                if (_rotate == 360)
+                    _rotate = 0; //Avoid extremely improbable integer overflow edge case
                 break;
 
             case Letter:
@@ -243,8 +240,6 @@ public class ImpressionistView extends View {
                 _lastPoint = new Point((int)motionEvent.getX(), (int)motionEvent.getY());
                 _speed = 2f; //messes up things if this is zero
 
-                bmpPos = getBitmapPositionInsideImageView(_imageView);
-
                 //If they tried to draw outside, return true and do not draw
                 if (! bmpPos.contains((int)currTouchX, (int)currTouchY))
                     return true;
@@ -255,7 +250,6 @@ public class ImpressionistView extends View {
             case MotionEvent.ACTION_MOVE:
                 //Movement history code from in-class example
                 int historySize = motionEvent.getHistorySize();
-                bmpPos = getBitmapPositionInsideImageView(_imageView);
 
                 //Use historical values for smoother brush strokes and more accurate speed calculations
                 for (int i = 0; i < historySize; i++) {

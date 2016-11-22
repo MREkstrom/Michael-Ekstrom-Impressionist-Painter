@@ -10,13 +10,10 @@ import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.URLUtil;
-import android.widget.ActionMenuView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -101,13 +98,16 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         final MainActivity placeholder = this;//Janky workaround
 
         //Request if the user wants to save their painting. If so, requests if they want to save
-        //with the background included. Picture titles are procuduerally generated
+        //with the background included. Picture titles are procedurally generated
         new AlertDialog.Builder(placeholder)
+                //Double check if they actually want to save
                 .setTitle("Save Painting?")
                 .setMessage("Do you want to save this painting?")
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
+
+                        //On yes, spawn another dialog to ask about backgroudn inclusion
                         new AlertDialog.Builder(placeholder)
                                 .setTitle("Include Background?")
                                 .setMessage("Do you want to include the original image as a background?")
@@ -120,10 +120,6 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
                                     public void onClick(DialogInterface dialog, int whichButton) {
                                         saveBitmap(_impressionistView.save(false));
                                     }}).show();
-
-
-
-
                     }})
                 .setNegativeButton(android.R.string.no, null).show();
     }
