@@ -10,6 +10,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -17,6 +18,8 @@ import android.view.View;
 import android.widget.ImageView;
 
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 /**
@@ -30,12 +33,15 @@ public class ImpressionistView extends View {
     private Canvas _backGroundCanvas = null; //Special feature: Colored background
     private Bitmap _offScreenBitmap = null;
     private Paint _paint = new Paint();
+    private Paint _backGroundPaint = new Paint();
 
     private int _alpha = 150; //Hard coded alpha value
     private float _speed = 0; //Current brush speed for use in some brush strokes
     private int _rotate = 0; //Current rotation for use in some brush strokes
+    private int _numsaved = 0;//Used to avoid name overlaps
     private Point _lastPoint = null; //Used to calculate _speed
-    private boolean _specialMode = false;//When true, modify environment for special feature
+    private boolean _specialMode = false;//When true, invert colors
+    private boolean _backGroundOn = false;//When true, draw the image behind the _offScreenBitmap
     private Paint _paintBorder = new Paint();
     private BrushType _brushType = BrushType.Square;
 
@@ -73,6 +79,8 @@ public class ImpressionistView extends View {
         _paint.setStyle(Paint.Style.FILL);
         _paint.setStrokeWidth(4);
         _paint.setTextSize(100f);//For use in BrushType.Letter
+
+        _backGroundPaint.setAlpha(255);
 
         _paintBorder.setColor(Color.BLACK);
         _paintBorder.setStrokeWidth(3);
@@ -122,6 +130,10 @@ public class ImpressionistView extends View {
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        if (_backGroundOn) {
+            canvas.drawBitmap(_imageView.getDrawingCache(), 0, 0, _backGroundPaint);
+        }
+
         if(_offScreenBitmap != null) {
             canvas.drawBitmap(_offScreenBitmap, 0, 0, _paint);
         }
@@ -130,9 +142,40 @@ public class ImpressionistView extends View {
         canvas.drawRect(getBitmapPositionInsideImageView(_imageView), _paintBorder);
     }
 
-    //TODO
-    public void toggleSpecialFeature(){
+    //Toggle whether or not color inversion is in use
+    public boolean toggleSpecialFeature(){
         _specialMode = !_specialMode;
+        return _specialMode;
+    }
+
+    //Toggle whether or not the actual image shows up in the background
+    public void backGroundOn(){
+        _backGroundOn = true;
+        invalidate();
+    }
+
+    //Toggle whether or not the actual image shows up in the background
+    public void backGroundOff(){
+       _backGroundOn = false;
+        invalidate();
+    }
+
+    //Saves the image to the device. Can either save with or without the image as a background
+    public Bitmap save(boolean withBackground){
+        if (_imageView.getDrawingCache() == null)
+            return null;
+        //Create a new bitmap
+        Bitmap bmp = getDrawingCache().copy(Bitmap.Config.ARGB_8888, true);
+        Canvas canvas = new Canvas(bmp);
+
+        //Draw the current _offScreenBitmap and the background (if requested) to the bitmap
+        if (withBackground)
+            canvas.drawBitmap(_imageView.getDrawingCache(), 0, 0, _backGroundPaint);
+        if(_offScreenBitmap != null)
+            canvas.drawBitmap(_offScreenBitmap, 0, 0, _paint);
+
+        return bmp;
+
     }
 
     //Extract the color from the source bitmap at the given X and Y position

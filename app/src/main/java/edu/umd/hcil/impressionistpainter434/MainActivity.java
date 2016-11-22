@@ -27,32 +27,37 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements OnMenuItemClickListener {
 
     private static int RESULT_LOAD_IMAGE = 1;
     private  ImpressionistView _impressionistView;
+    private int _numsaved = 0; //Used to avoid file name collisions
 
     // These images are downloaded and added to the Android Gallery when the 'Download Images' button is clicked.
     // This was super useful on the emulator where there are no images by default
     private static String[] IMAGE_URLS ={
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/BoliviaBird_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/BolivianDoor_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/MinnesotaFlower_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PeruHike_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/ReginaSquirrel_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreDog_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreStreet_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreStreet_PhotoByJonFroehlich2(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreWine_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/WashingtonStateFlower_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/JonILikeThisShirt_Medium.JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/JonUW_(853x1280).jpg",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/MattMThermography_Medium.jpg",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PinkFlower_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PinkFlower2_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PurpleFlowerPlusButterfly_PhotoByJonFroehlich(Medium).JPG",
-            //"http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/WhiteFlower_PhotoByJonFroehlich(Medium).JPG",
+            "https://scontent-iad3-1.xx.fbcdn.net/v/t1.0-9/1554533_1734653370092064_5055259331704822911_n.jpg?oh=046c4fb0bb6450fad016db460a7ef934&oe=58BD4F8F",
+            "https://queerty-prodweb.s3.amazonaws.com/content/docs//2016/06/lgbtflag_2873116b.jpg",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/BoliviaBird_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/BolivianDoor_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/MinnesotaFlower_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PeruHike_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/ReginaSquirrel_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreDog_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreStreet_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreStreet_PhotoByJonFroehlich2(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/SucreWine_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/WashingtonStateFlower_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/JonILikeThisShirt_Medium.JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/JonUW_(853x1280).jpg",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/MattMThermography_Medium.jpg",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PinkFlower_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PinkFlower2_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/PurpleFlowerPlusButterfly_PhotoByJonFroehlich(Medium).JPG",
+            "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/WhiteFlower_PhotoByJonFroehlich(Medium).JPG",
             "http://www.cs.umd.edu/class/spring2016/cmsc434/assignments/IA08-AndroidII/Images/YellowFlower_PhotoByJonFroehlich(Medium).JPG",
     };
 
@@ -71,10 +76,12 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         backgroundButton.setOnTouchListener(new View.OnTouchListener(){
             @Override
             public boolean onTouch(View v, MotionEvent e){
-                if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                    _impressionistView.backGroundOn();
-                }else {
+                if (e.getAction() == MotionEvent.ACTION_UP) {
                     _impressionistView.backGroundOff();
+                    //Toast.makeText(MainActivity.this, "Background Disabled", Toast.LENGTH_SHORT).show();
+                }else {
+                    _impressionistView.backGroundOn();
+                    //Toast.makeText(MainActivity.this, "Background Enabled", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             }
@@ -83,11 +90,61 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
     }
 
     public void onButtonClickSpecialFeature(View v){
-        _impressionistView.toggleSpecialFeature();
+        if (_impressionistView.toggleSpecialFeature()) {
+            Toast.makeText(MainActivity.this, "Colors inverted", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MainActivity.this, "Colors normalized", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void onButtonClickSaveImage(View v) {
+        final MainActivity placeholder = this;//Janky workaround
 
+        //Request if the user wants to save their painting. If so, requests if they want to save
+        //with the background included. Picture titles are procuduerally generated
+        new AlertDialog.Builder(placeholder)
+                .setTitle("Save Painting?")
+                .setMessage("Do you want to save this painting?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        new AlertDialog.Builder(placeholder)
+                                .setTitle("Include Background?")
+                                .setMessage("Do you want to include the original image as a background?")
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int whichButton) {
+                                        saveBitmap(_impressionistView.save(true));
+                                    }})
+                                .setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int whichButton) {
+                                        saveBitmap(_impressionistView.save(false));
+                                    }}).show();
+
+
+
+
+                    }})
+                .setNegativeButton(android.R.string.no, null).show();
+    }
+
+    //Used to save a given Bitmap to the photo gallery
+    public void saveBitmap(Bitmap bmp) {
+        if (bmp == null) {
+            Toast.makeText(MainActivity.this, "Save failed", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        //Generate a file name
+        //Date and time code reference to: http://stackoverflow.com/questions/5369682/get-current-time-and-date-on-android
+        _numsaved ++;
+        SimpleDateFormat date = new SimpleDateFormat("MM_dd_yyyy_HH:mm");
+        String title = "IMG:" + date.format(new Date()) + " (" + _numsaved + ")";
+
+        //Save the bitmap to a file
+        //Reference: http://stackoverflow.com/questions/8560501/android-save-image-into-gallery
+        MediaStore.Images.Media.insertImage(getContentResolver(), bmp, title, "A great drawing!");
+
+        Toast.makeText(MainActivity.this, "Image saved", Toast.LENGTH_SHORT).show();
     }
 
     public void onButtonClickClear(View v) {
